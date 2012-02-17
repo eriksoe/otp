@@ -1916,6 +1916,11 @@ gexpr({call,Line,{remote,_Lr,{atom,_Lm,erlang},{atom,_Lf,F}},As}, Vt, St0) ->
     end;
 gexpr({call,L,{tuple,Lt,[{atom,Lm,erlang},{atom,Lf,F}]},As}, Vt, St) ->
     gexpr({call,L,{remote,Lt,{atom,Lm,erlang},{atom,Lf,F}},As}, Vt, St);
+gexpr({pattern_test,_Line,E,P}, Vt, St0) ->
+    {Avt,St1} = gexpr(E, Vt, St0),
+    {_Pvt,_Bvt,St2} = pattern(E, Vt, St1),
+    %% TODO: Let bindings from P be available under the right circumstances.
+    {Avt,St2};
 gexpr({op,Line,Op,A}, Vt, St0) ->
     {Avt,St1} = gexpr(A, Vt, St0),
     case is_gexpr_op(Op, 1) of
@@ -2260,6 +2265,12 @@ expr({match,_Line,P,E}, Vt, St0) ->
     {Pvt,Bvt,St2} = pattern(P, vtupdate(Evt, Vt), St1),
     St = reject_bin_alias_expr(P, E, St2),
     {vtupdate(Bvt, vtmerge(Evt, Pvt)),St};
+expr({pattern_test,_Line,E,P}, Vt, St0) ->
+    {Evt,St1} = expr(E, Vt, St0),
+    Vt2 = vtupdate(Evt, Vt),
+    {_Pvt,_Bvt,St2} = pattern(P, Vt2, St1),
+    %% TODO: Let bindings from P be available under the right circumstances.
+    {Vt2,St2};
 %% No comparison or boolean operators yet.
 expr({op,_Line,_Op,A}, Vt, St) ->
     expr(A, Vt, St);
