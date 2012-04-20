@@ -1918,7 +1918,7 @@ gexpr({call,L,{tuple,Lt,[{atom,Lm,erlang},{atom,Lf,F}]},As}, Vt, St) ->
     gexpr({call,L,{remote,Lt,{atom,Lm,erlang},{atom,Lf,F}},As}, Vt, St);
 gexpr({pattern_test,_Line,E,P}, Vt, St0) ->
     {Avt,St1} = gexpr(E, Vt, St0),
-    {_Pvt,_Bvt,St2} = pattern(E, Vt, St1),
+    {_Pvt,_Bvt,St2} = pattern(P, Vt, St1),
     %% TODO: Let bindings from P be available under the right circumstances.
     {Avt,St2};
 gexpr({op,Line,Op,A}, Vt, St0) ->
@@ -2265,6 +2265,20 @@ expr({match,_Line,P,E}, Vt, St0) ->
     {Pvt,Bvt,St2} = pattern(P, vtupdate(Evt, Vt), St1),
     St = reject_bin_alias_expr(P, E, St2),
     {vtupdate(Bvt, vtmerge(Evt, Pvt)),St};
+
+expr({op,Line,'andalso'=Op,{pattern_test,_Line2,E,P},R}, Vt, St0) ->
+    %% Like pattern_test, but let the bindings from P be available
+    %% under the right circumstances.
+    {Evt,St1} = expr(E, Vt, St0),
+    Vt2 = vtupdate(Evt, Vt),
+    {Pvt,Bvt,St2} = pattern(P, Vt2, St1),
+    VtTrue = vtupdate(Pvt, vtupdate(Bvt, Vt2)),
+
+    {Vt3, St3} = expr_shortcut(Op, R, Line, Evt, VtTrue, St2),
+
+    {Vt4,St4} = icrt_export([Vt2,Vt3], Vt2, {Op,Line}, St3),
+    {Vt4,St4};
+
 expr({pattern_test,_Line,E,P}, Vt, St0) ->
     {Evt,St1} = expr(E, Vt, St0),
     Vt2 = vtupdate(Evt, Vt),
@@ -2277,10 +2291,7 @@ expr({op,_Line,_Op,A}, Vt, St) ->
 expr({op,Line,Op,L,R}, Vt, St0) when Op =:= 'orelse'; Op =:= 'andalso' ->
     {Evt1,St1} = expr(L, Vt, St0),
     Vt1 = vtupdate(Evt1, Vt),
-    {Evt2,St2} = expr(R, Vt1, St1),
-    Vt2 = vtmerge(Evt2, Vt1),
-    {Vt3,St3} = icrt_export([Vt1,Vt2], Vt1, {Op,Line}, St2),
-    {vtmerge(Evt1, Vt3),St3};
+    expr_shortcut(Op, R, Line, Evt1, Vt1, St1);
 expr({op,_Line,_Op,L,R}, Vt, St) ->
     expr_list([L,R], Vt, St);                   %They see the same variables
 %% The following are not allowed to occur anywhere!
@@ -2288,6 +2299,12 @@ expr({remote,Line,_M,_F}, _Vt, St) ->
     {[],add_error(Line, illegal_expr, St)};
 expr({'query',Line,_Q}, _Vt, St) ->
     {[],add_error(Line, {mnemosyne,"query"}, St)}.
+
+expr_shortcut(Op, R, Line, Evt1, Vt1, St1) ->
+    {Evt2,St2} = expr(R, Vt1, St1),
+    Vt2 = vtmerge(Evt2, Vt1),
+    {Vt3,St3} = icrt_export([Vt1,Vt2], Vt1, {Op,Line}, St2),
+    {vtmerge(Evt1, Vt3),St3}.
 
 %% expr_list(Expressions, Variables, State) ->
 %%      {UsedVarTable,State}

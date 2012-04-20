@@ -625,10 +625,17 @@ expr({match,L,P0,E0}, St0) ->
 	Other when not is_atom(Other) ->
 	    {#imatch{anno=#a{anno=Lanno},pat=P2,arg=E2,fc=Fc},Eps,St4}
     end;
+expr({op,L1,'andalso',{pattern_test,L2,E1,P},E2}, St) ->
+    %% Desugar.
+    expr({'case', L2, E1,
+	  [{clause, L1, [P], [], [E2]},
+	   {clause, L1, [{var,L1,'_'}], [], [{atom,L1,false}]}]},
+	 St);
 expr({pattern_test,L,E,P}, St) ->
     %% Desugar.
-    expr({'case', L, E, [{clause, L, [P], [], [{atom,L,true}]},
-			 {clause, L, [{var,L,'_'}], [], [{atom,L,false}]}]},
+    expr({'case', L, E,
+	  [{clause, L, [P], [], [{atom,L,true}]},
+	   {clause, L, [{var,L,'_'}], [], [{atom,L,false}]}]},
 	 St);
 expr({op,_,'++',{lc,Llc,E,Qs},More}, St0) ->
     %% Optimise '++' here because of the list comprehension algorithm.
