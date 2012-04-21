@@ -60,7 +60,7 @@ char integer float atom string var
 '+' '-' 'bor' 'bxor' 'bsl' 'bsr' 'or' 'xor'
 '++' '--'
 '==' '/=' '=<' '<' '>=' '>' '=:=' '=/=' '<='
-'~'
+'?='
 '<<' '>>'
 '!' '=' '::' '..' '...'
 'spec' 'callback' % helper
@@ -232,8 +232,8 @@ expr_160 -> expr_200 : '$1'.
 
 expr_200 -> expr_300 comp_op expr_300 :
 	?mkop2('$1', '$2', '$3').
-expr_200 -> expr_300 '~' expr_300 :
-	{pattern_test,?line('$2'),'$1','$3'}.
+expr_200 -> expr_300 '?=' expr_300 :
+	{match_attempt,?line('$2'),'$1','$3'}.
 expr_200 -> expr_300 : '$1'.
 
 expr_300 -> expr_400 list_op expr_300 :

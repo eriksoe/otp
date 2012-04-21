@@ -400,10 +400,10 @@ expr({match,Line,P0,E0}, St0) ->
     {E,St1} = expr(E0, St0),
     {P,St2} = pattern(P0, St1),
     {{match,Line,P,E},St2};
-expr({pattern_test,Line,E0,P0}, St0) ->
+expr({match_attempt,Line,P0,E0}, St0) ->
     {E,St1} = expr(E0, St0),
     {P,St2} = pattern(P0, St1),
-    {{pattern_test,Line,P,E},St2};
+    {{match_attempt,Line,P,E},St2};
 expr({op,Line,'not',A0}, St0) ->
     {A,St1} = bool_operand(A0, St0),
     {{op,Line,'not',A},St1};

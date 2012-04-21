@@ -625,13 +625,13 @@ expr({match,L,P0,E0}, St0) ->
 	Other when not is_atom(Other) ->
 	    {#imatch{anno=#a{anno=Lanno},pat=P2,arg=E2,fc=Fc},Eps,St4}
     end;
-expr({op,L1,'andalso',{pattern_test,L2,E1,P},E2}, St) ->
+expr({op,L1,'andalso',{match_attempt,L2,P,E1},E2}, St) ->
     %% Desugar.
     expr({'case', L2, E1,
 	  [{clause, L1, [P], [], [E2]},
 	   {clause, L1, [{var,L1,'_'}], [], [{atom,L1,false}]}]},
 	 St);
-expr({pattern_test,L,E,P}, St) ->
+expr({match_attempt,L,P,E}, St) ->
     %% Desugar.
     expr({'case', L, E,
 	  [{clause, L, [P], [], [{atom,L,true}]},
